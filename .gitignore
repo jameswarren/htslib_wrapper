@@ -1,0 +1,10 @@
+.idea/
+work
+**/target/
+lib_managed/
+*.log
+variantstore-rev
+terraform-rev
+generated.tfvars
+/*.jar
+.DS_Store
