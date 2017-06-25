@@ -8,26 +8,19 @@ import scala.io.Source
 
 object Jnaerate {
 
-  object Runtime extends Enumeration {
-    type Runtime = Value
-    val JNA = Value("JNA")
-    val JNAERATOR = Value("JNAerator")
-    val BRIDJ = Value("BridJ")
-    val NODEJS = Value("NodeJS")
-  }
+  lazy val generate: TaskKey[Seq[File]] = taskKey[Seq[java.io.File]]("generates Scala code for native C library")
 
   case class JnaerateTask(pkgName: String, libName: String, inputs: Seq[File], outputDir: File) {
-
-    def generate(runtime: Runtime.Value, options: Seq[String], s: TaskStreams): Seq[File] = {
+    def generate(s: TaskStreams): Seq[File] = {
 
       val jnaerate = FileFunction.cached(s.cacheDirectory / "jnaerate", inStyle = FilesInfo.lastModified) {
-        action(runtime, options, s.log)
+        action(s.log)
       }
 
       jnaerate(inputs.toSet).toSeq
     }
 
-    def action(runtime: Runtime.Value, options: Seq[String], logger: Logger): Set[File] => Set[File] = {
+    def action(logger: Logger): Set[File] => Set[File] = {
       files =>
         files.size match {
           case 0 => Set.empty[File]
@@ -36,8 +29,11 @@ object Jnaerate {
             val jnaeratorArgs: List[String] = List(
               "-package", pkgName,
               "-library", libName,
-              "-runtime", runtime.toString,
-              "-o", outputDir.getCanonicalPath) ++ options ++
+              "-runtime", "BridJ",
+              "-mode", "Directory",
+              "-scalaStructSetters",
+              "-skipFunctions", "cram.*",
+              "-o", outputDir.getCanonicalPath)  ++
               (inputs map {
                 _.getCanonicalPath
               })
@@ -65,7 +61,4 @@ object Jnaerate {
     }
   }
 
-  lazy val generate: TaskKey[Seq[File]] = taskKey[Seq[java.io.File]]("generates Scala code for native C library")
-
 }
-
